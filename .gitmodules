@@ -1,0 +1,3 @@
+[submodule "vips_driver"]
+	path = vips_driver
+	url = git@gitlab.com:vips-ros2-rover/vips-driver.git
