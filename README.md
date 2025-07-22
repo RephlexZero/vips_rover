@@ -2,25 +2,81 @@
 
 This workspace contains the ROS2 packages for controlling an Ackermann steering rover, both in simulation and in real life.
 
+## Requirements
+
+- **ROS2 Jazzy** - [Installation Guide](https://docs.ros.org/en/jazzy/Installation.html)
+- **Gazebo Harmonic** (for simulation) - Usually installed with ROS2 desktop
+- **colcon** build tool - `sudo apt install python3-colcon-common-extensions`
+- **rosdep** - `sudo apt install python3-rosdep2` (if not already installed)
+- **GitLab SSH access** - Make sure your SSH key is configured for GitLab
+
 ## Packages
 
 - **rover_hardware_interface**: Hardware interface and controllers for the rover
 - **vips_driver**: VIPS sensor driver
 
+## Setup
+
+### Clone and Build
+
+```bash
+# Clone the entire workspace with submodules
+git clone --recursive git@gitlab.com:vips-ros2-rover/rover.git ros2_ws
+cd ros2_ws
+
+# Initialize rosdep (first time only)
+sudo rosdep init
+rosdep update
+
+# Install all dependencies
+rosdep install --from-paths . --ignore-src -r -y
+
+# Build the workspace
+./scripts/build.sh
+```
+
+### Manual Setup (Alternative)
+
+If you prefer to set up packages individually:
+
+```bash
+# Create workspace
+mkdir -p ~/ros2_ws/src
+cd ~/ros2_ws/src
+
+# Clone individual packages
+git clone git@gitlab.com:vips-ros2-rover/rover-hardware-interface.git rover_hardware_interface
+git clone git@gitlab.com:vips-ros2-rover/vips-driver.git vips_driver
+
+# Go back to workspace root and install dependencies
+cd ~/ros2_ws
+rosdep install --from-paths src --ignore-src -r -y
+
+# Build
+colcon build
+source install/setup.bash
+```
+
 ## Quick Start
 
 ### Prerequisites
 
-Make sure you have ROS2 installed and this workspace built:
+- ROS2 Jazzy installed ([Installation Guide](https://docs.ros.org/en/jazzy/Installation.html))
+- For initial setup, see the [Setup](#setup) section above
+
+### Daily Usage
 
 ```bash
-# Quick build using the provided script
-./scripts/build.sh
+# Source ROS2 (add to ~/.bashrc for persistence)
+source /opt/ros/jazzy/setup.bash
 
-# OR manually:
-cd ~/ros2_ws
-colcon build
-source install/setup.bash
+# Update dependencies (run occasionally)
+rosdep update
+rosdep install --from-paths . --ignore-src -r -y
+
+# Build and source workspace
+./scripts/build.sh
+# OR manually: colcon build && source install/setup.bash
 ```
 
 ### Running the Simulation
@@ -112,6 +168,13 @@ ros2 topic echo /ackermann_steering_controller/odometry
 
 ## Troubleshooting
 
+### Missing Dependencies
+```bash
+# Update and install missing dependencies
+rosdep update
+rosdep install --from-paths . --ignore-src -r -y
+```
+
 ### Controllers not loading
 ```bash
 # Check controller manager status
@@ -124,8 +187,9 @@ ros2 control set_controller_state ackermann_steering_controller active
 ```
 
 ### Simulation issues
-- Make sure Gazebo is properly installed
+- Make sure Gazebo Harmonic is properly installed (`sudo apt install ros-jazzy-gz-*`)
 - Check that the URDF file is valid: `xacro rover_hardware_interface/urdf/rover.urdf.xacro`
+- Verify all simulation dependencies: `rosdep check --from-paths . --ignore-src`
 
 ### Real robot issues
 - Check CAN bus connection
