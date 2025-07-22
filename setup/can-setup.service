@@ -1,0 +1,14 @@
+[Unit]
+Description=Setup CAN interface for rover
+After=network.target
+Wants=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/ip link set can0 up type can bitrate 125000
+ExecStop=/usr/bin/ip link set can0 down
+RemainAfterExit=yes
+User=root
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,6 @@
+# Allow users in the dialout group to access CAN interfaces
+SUBSYSTEM=="net", KERNEL=="can*", GROUP="dialout", MODE="0664"
+
+# Allow users in the dialout group to configure network interfaces
+SUBSYSTEM=="net", ACTION=="add", RUN+="/bin/chgrp dialout /sys/class/net/%k/flags"
+SUBSYSTEM=="net", ACTION=="add", RUN+="/bin/chmod g+w /sys/class/net/%k/flags"
