@@ -4,11 +4,8 @@ This workspace contains the ROS2 packages for controlling an Ackermann steering 
 
 ## Requirements
 
+- **Ubuntu 24.04 LTS** (Noble Numbat) - Required for ROS2 Jazzy
 - **ROS2 Jazzy** - [Installation Guide](https://docs.ros.org/en/jazzy/Installation.html)
-- **Gazebo Harmonic** (for simulation) - Usually installed with ROS2 desktop
-- **colcon** build tool - `sudo apt install python3-colcon-common-extensions`
-- **rosdep** - `sudo apt install python3-rosdep2` (if not already installed)
-- **GitLab SSH access** - Make sure your SSH key is configured for GitLab
 
 ## Packages
 
@@ -17,45 +14,24 @@ This workspace contains the ROS2 packages for controlling an Ackermann steering 
 
 ## Setup
 
-### Clone and Build
-
 ```bash
-# Clone the entire workspace with submodules
+# Clone the workspace
 git clone --recursive git@gitlab.com:vips-ros2-rover/rover.git ros2_ws
 cd ros2_ws
 
-# Initialize rosdep (first time only)
-sudo rosdep init
+# Install all dependencies using rosdep (recommended)
 rosdep update
-
-# Install all dependencies
 rosdep install --from-paths . --ignore-src -r -y
 
 # Build the workspace
 ./scripts/build.sh
 ```
 
-### Manual Setup (Alternative)
-
-If you prefer to set up packages individually:
-
-```bash
-# Create workspace
-mkdir -p ~/ros2_ws/src
-cd ~/ros2_ws/src
-
-# Clone individual packages
-git clone git@gitlab.com:vips-ros2-rover/rover-hardware-interface.git rover_hardware_interface
-git clone git@gitlab.com:vips-ros2-rover/vips-driver.git vips_driver
-
-# Go back to workspace root and install dependencies
-cd ~/ros2_ws
-rosdep install --from-paths src --ignore-src -r -y
-
-# Build
-colcon build
-source install/setup.bash
-```
+**Note**: `rosdep` automatically installs all required packages including:
+- Gazebo Harmonic (simulation)
+- ros2_control packages  
+- All ROS2 message packages
+- System dependencies
 
 ## Quick Start
 
@@ -187,9 +163,9 @@ ros2 control set_controller_state ackermann_steering_controller active
 ```
 
 ### Simulation issues
-- Make sure Gazebo Harmonic is properly installed (`sudo apt install ros-jazzy-gz-*`)
+- Ensure all dependencies are installed: `rosdep install --from-paths . --ignore-src -r -y`
 - Check that the URDF file is valid: `xacro rover_hardware_interface/urdf/rover.urdf.xacro`
-- Verify all simulation dependencies: `rosdep check --from-paths . --ignore-src`
+- Verify Gazebo installation: `gz sim --version`
 
 ### Real robot issues
 - Check CAN bus connection
