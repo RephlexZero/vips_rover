@@ -38,4 +38,4 @@ echo "Use Ctrl+C to stop."
 echo ""
 
 # Launch real hardware
-ros2 launch rover_hardware_interface rover_no_sudo.launch.py
+ros2 launch rover_hardware_interface rover_hardware.launch.py
