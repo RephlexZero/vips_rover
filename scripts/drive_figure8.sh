@@ -4,7 +4,7 @@
 echo "Making rover drive in a figure-8 pattern..."
 
 # Source the workspace
-source /home/jakestewart/ros2_ws/install/setup.bash
+source ~/ros2_ws/install/setup.bash
 
 echo "Starting figure-8 motion (Ctrl+C to stop)..."
 

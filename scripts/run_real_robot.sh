@@ -4,7 +4,7 @@
 echo "Starting Real Rover Hardware..."
 
 # Source the workspace
-source /home/jakestewart/ros2_ws/install/setup.bash
+source ~/ros2_ws/install/setup.bash
 
 # Launch the real robot
 ros2 launch rover_hardware_interface rover_system.launch.py

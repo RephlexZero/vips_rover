@@ -4,7 +4,7 @@
 echo "Making rover drive in a circle..."
 
 # Source the workspace
-source /home/jakestewart/ros2_ws/install/setup.bash
+source ~/ros2_ws/install/setup.bash
 
 # Drive in a circle with 0.8 m/s forward speed and 0.3 rad steering angle
 echo "Starting circular motion (Ctrl+C to stop)..."

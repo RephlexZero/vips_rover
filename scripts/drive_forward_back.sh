@@ -4,7 +4,7 @@
 echo "Making rover drive forward and back..."
 
 # Source the workspace
-source /home/jakestewart/ros2_ws/install/setup.bash
+source ~/ros2_ws/install/setup.bash
 
 echo "Starting forward/back motion (Ctrl+C to stop)..."
 

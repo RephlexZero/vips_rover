@@ -18,7 +18,7 @@ Make sure you have ROS2 installed and this workspace built:
 ./scripts/build.sh
 
 # OR manually:
-cd /home/jakestewart/ros2_ws
+cd ~/ros2_ws
 colcon build
 source install/setup.bash
 ```

@@ -3,7 +3,7 @@
 # Script to build the ROS2 workspace
 echo "Building ROS2 workspace..."
 
-cd /home/jakestewart/ros2_ws
+cd ~/ros2_ws
 
 # Build the workspace
 colcon build
