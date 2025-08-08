@@ -7,3 +7,6 @@
 [submodule "rover_description"]
 	path = rover_description
 	url = git@gitlab.com:vips-ros2-rover/rover-description.git
+[submodule "rover_navigation"]
+	path = rover_navigation
+	url = git@gitlab.com:vips-ros2-rover/rover-navigation.git
