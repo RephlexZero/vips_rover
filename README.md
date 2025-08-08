@@ -65,6 +65,22 @@ sudo ./scripts/setup.sh
 ```
 **Includes**: CAN bus interface, VIPS positioning, sensor fusion with robot_localization EKF
 
+#### 🧭 Autonomous Navigation
+
+**Simulation with SLAM and Nav2:**
+```bash
+./scripts/nav_sim.sh
+# OR: ros2 launch rover_navigation rover_nav_sim.launch.py
+```
+
+**Hardware with Sensor Fusion:**
+```bash
+./scripts/nav_hw.sh
+# OR: ros2 launch rover_navigation rover_nav_hw.launch.py
+```
+
+**Features**: Click-to-navigate in RViz, automatic path planning, obstacle avoidance, SLAM mapping, recovery behaviors
+
 ### 3. Control the Rover
 
 #### Interactive Control
@@ -87,15 +103,16 @@ ros2 topic pub /ackermann_steering_controller/reference_unstamped \
 
 ## 🛠️ Available Scripts
 
-| Script | Purpose | Mode |
-|--------|---------|------|
-| `./scripts/build.sh` | Build the ROS2 workspace | Both |
-| `./scripts/validate.sh` | Validate the installation | Both |
+| Command | Description | Mode |
+|---------|-------------|------|
+| `./scripts/build.sh` | Build all packages | Development |
+| `./scripts/validate.sh` | Run validation tests | Development |
 | `./scripts/sim.sh` | Launch pure simulation | Simulation |
 | `./scripts/real.sh` | Launch real hardware | Hardware |
+| `./scripts/nav_sim.sh` | Autonomous navigation (sim) | Navigation |
+| `./scripts/nav_hw.sh` | Autonomous navigation (hw) | Navigation |
 | `./scripts/control.sh` | Interactive rover control | Both |
-| `./scripts/help.sh` | System status and help | Both |
-| `./scripts/setup.sh` | One-time hardware setup | Hardware |
+| `./scripts/setup.sh` | One-time system setup | Setup |
 
 ## 🔧 Hardware Configuration
 
