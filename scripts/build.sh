@@ -29,7 +29,7 @@ echo "🔧 ROS2 Distribution: $ROS_DISTRO"
 echo ""
 echo "📦 Installing dependencies..."
 rosdep update
-rosdep install --from-paths src --ignore-src -r -y
+rosdep install --from-paths . --ignore-src -r -y
 
 # Clean build (optional - uncomment if needed)
 # echo ""

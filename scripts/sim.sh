@@ -1,16 +1,33 @@
 #!/bin/bash
 
 #
-# Launch rover in pure simulation mode
-# No hardware components - perfect for development and testing
+# Rover navigation simulation launcher
+# Always includes SLAM + Nav2 autonomous navigation
 #
 
 set -e
 
-echo "🎮 Starting Rover Simulation"
-echo "============================"
+echo "🎮 Rover Navigation Simulation"
+echo "=============================="
+echo ""
+echo "🧭 Starting Navigation Simulation"
+echo "================================="
+echo "📋 This will start:"
+echo "  - Gazebo simulation with rover"
+echo "  - SLAM mapping capability"
+echo "  - Nav2 autonomous navigation"
+echo "  - RViz with click-to-navigate interface"
+echo ""
+echo "💡 Navigation Tips:"
+echo "  - Wait for SLAM to initialize (map should appear in RViz)"
+echo "  - Use '2D Pose Estimate' to set initial robot pose"
+echo "  - Use '2D Nav Goal' to set navigation targets"
+echo "  - Click anywhere on the map to navigate there"
+echo "  - Robot will avoid obstacles and plan optimal paths"
+echo "  - Use teleop for manual control: ros2 run teleop_twist_keyboard teleop_twist_keyboard"
+echo ""
 
-# Change to workspace directory  
+# Change to workspace root
 WORKSPACE_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$WORKSPACE_ROOT"
 
@@ -20,7 +37,7 @@ if [ ! -d "install" ]; then
     exit 1
 fi
 
-# Source the workspace
+# Source workspace
 echo "📋 Sourcing workspace..."
 source install/setup.bash
 
@@ -30,19 +47,13 @@ if ! ros2 pkg list | grep -q rover_description; then
     exit 1
 fi
 
-echo "🚀 Launching simulation..."
-echo ""
-echo "This will start:"
-echo "  - Gazebo simulation world"
-echo "  - Rover robot model" 
-echo "  - Robot state publisher"
-echo "  - Controllers (ackermann_steering, joint_state_broadcaster)"
-echo ""
-echo "💡 Tips:"
-echo "  - Open RViz2 to visualize: rviz2"
-echo "  - Control with teleop: ros2 run teleop_twist_keyboard teleop_twist_keyboard"
-echo "  - Monitor topics: ros2 topic list"
+if ! ros2 pkg list | grep -q rover_navigation; then
+    echo "❌ rover_navigation package not found. Build the workspace first."
+    exit 1
+fi
+
+echo "🚀 Launching navigation simulation..."
 echo ""
 
-# Launch simulation
-exec ros2 launch rover_description simulation.launch.py
+# Launch navigation simulation
+exec ros2 launch rover_navigation rover_nav_sim.launch.py
