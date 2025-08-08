@@ -4,3 +4,6 @@
 [submodule "rover_hardware_interface"]
 	path = rover_hardware_interface
 	url = git@gitlab.com:vips-ros2-rover/rover-hardware-interface.git
+[submodule "rover_description"]
+	path = rover_description
+	url = git@gitlab.com:vips-ros2-rover/rover-description.git
