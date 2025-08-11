@@ -1,59 +1,32 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-#
-# Rover navigation simulation launcher
-# Always includes SLAM + Nav2 autonomous navigation
-#
+# Minimal simulation entrypoint: builds if needed, sources, launches sim+nav.
 
-set -e
+WS_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$WS_ROOT"
 
-echo "🎮 Rover Navigation Simulation"
-echo "=============================="
-echo ""
-echo "🧭 Starting Navigation Simulation"
-echo "================================="
-echo "📋 This will start:"
-echo "  - Gazebo simulation with rover"
-echo "  - SLAM mapping capability"
-echo "  - Nav2 autonomous navigation"
-echo "  - RViz with click-to-navigate interface"
-echo ""
-echo "💡 Navigation Tips:"
-echo "  - Wait for SLAM to initialize (map should appear in RViz)"
-echo "  - Use '2D Pose Estimate' to set initial robot pose"
-echo "  - Use '2D Nav Goal' to set navigation targets"
-echo "  - Click anywhere on the map to navigate there"
-echo "  - Robot will avoid obstacles and plan optimal paths"
-echo "  - Use teleop for manual control: ros2 run teleop_twist_keyboard teleop_twist_keyboard"
-echo ""
+# Source ROS setup (disable strict mode temporarily for setup scripts)
+set +u
+if [ -f "/opt/ros/jazzy/setup.bash" ]; then
+    source /opt/ros/jazzy/setup.bash
+fi
+set -u
 
-# Change to workspace root
-WORKSPACE_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "$WORKSPACE_ROOT"
-
-# Check if workspace is built
-if [ ! -d "install" ]; then
-    echo "❌ Workspace not built. Run ./scripts/build.sh first"
-    exit 1
+# Build if missing install or when SIM_BUILD=1 is set
+if [ ! -d install ] || [ "${SIM_BUILD:-0}" = "1" ]; then
+    echo "[sim] Building rover_description and rover_navigation..."
+    colcon build --packages-select rover_description rover_navigation --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo --event-handlers console_cohesion+
 fi
 
-# Source workspace
-echo "📋 Sourcing workspace..."
+set +u
 source install/setup.bash
+set -u
 
-# Check for required packages
-if ! ros2 pkg list | grep -q rover_description; then
-    echo "❌ rover_description package not found. Build the workspace first."
-    exit 1
+PROFILE="${SIM_PROFILE:-full}"
+if [ "$PROFILE" = "empty" ]; then
+    echo "[sim] Launching sim + nav (empty world, no SLAM)..."
+    exec ros2 launch rover_navigation rover_nav_sim_empty_world.launch.py
+else
+    echo "[sim] Launching sim + nav..."
+    exec ros2 launch rover_navigation rover_nav_sim.launch.py
 fi
-
-if ! ros2 pkg list | grep -q rover_navigation; then
-    echo "❌ rover_navigation package not found. Build the workspace first."
-    exit 1
-fi
-
-echo "🚀 Launching navigation simulation..."
-echo ""
-
-# Launch navigation simulation
-exec ros2 launch rover_navigation rover_nav_sim.launch.py
