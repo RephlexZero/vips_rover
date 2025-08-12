@@ -61,8 +61,14 @@ global_costmap:
       global_frame: map
       robot_base_frame: base_link
       use_sim_time: true
-      robot_radius: 0.3
+      # For no-map operation, use a rolling window with explicit size
+      rolling_window: true
+      width: 50.0
+      height: 50.0
       resolution: 0.1
+      origin_x: -25.0
+      origin_y: -25.0
+      robot_radius: 0.3
       track_unknown_space: false
       plugins: ["inflation_layer"]
       inflation_layer:

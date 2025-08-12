@@ -30,8 +30,7 @@ def generate_launch_description():
     log_level = LaunchConfiguration('log_level')
     
     # Remappings for ackermann drive
-    remappings = [
-        ('/cmd_vel', '/cmd_vel_nav'),
+    nav2_remappings = [
         ('/odom', '/robot_localization/odometry/filtered')
     ]
 
@@ -106,7 +105,7 @@ def generate_launch_description():
             respawn_delay=2.0,
             parameters=[configured_params],
             arguments=['--ros-args', '--log-level', log_level],
-            remappings=remappings),
+            remappings=nav2_remappings),
 
         Node(
             package='nav2_smoother',
@@ -167,8 +166,7 @@ def generate_launch_description():
             respawn_delay=2.0,
             parameters=[configured_params],
             arguments=['--ros-args', '--log-level', log_level],
-            remappings=remappings +
-                        [('/cmd_vel', '/cmd_vel_smoothed')]),
+            remappings=[('/cmd_vel', '/cmd_vel'), ('/cmd_vel_smoothed', '/cmd_vel_smoothed')] + nav2_remappings),
 
         Node(
             package='nav2_lifecycle_manager',

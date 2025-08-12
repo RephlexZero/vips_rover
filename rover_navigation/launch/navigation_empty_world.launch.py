@@ -29,10 +29,19 @@ def generate_launch_description():
     declare_log_level_cmd = DeclareLaunchArgument(
         'log_level', default_value='info', description='log level')
 
-    remappings = [
-        ('/cmd_vel', '/cmd_vel_nav'),
+    # Only remap odom; keep /cmd_vel default so the converter sees Nav2 output
+    nav2_remappings = [
         ('/odom', '/ackermann_steering_controller/odometry'),
     ]
+
+    # Static map->odom identity TF (start BEFORE Nav2)
+    static_tf = Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        name='map_to_odom_static_tf',
+        output='screen',
+        arguments=['0','0','0','0','0','0','map','odom']
+    )
 
     bringup_cmd_group = GroupAction([
         Node(
@@ -41,7 +50,7 @@ def generate_launch_description():
             output='screen',
             parameters=[nav2_params_file, {'use_sim_time': use_sim_time}],
             arguments=['--ros-args', '--log-level', log_level],
-            remappings=remappings),
+            remappings=nav2_remappings),
 
         Node(
             package='nav2_smoother',
@@ -91,15 +100,7 @@ def generate_launch_description():
                                         'bt_navigator']}]),
     ])
 
-    # Static map->odom identity TF
-    static_tf = Node(
-        package='tf2_ros',
-        executable='static_transform_publisher',
-        name='map_to_odom_static_tf',
-        output='screen',
-        arguments=['0','0','0','0','0','0','map','odom']
-    )
-
+    # Cmd_vel to Ackermann converter: subscribe to /cmd_vel, publish /ackermann_cmd
     cmd_vel_converter = Node(
         package='rover_navigation',
         executable='cmd_vel_to_ackermann.py',
@@ -115,7 +116,7 @@ def generate_launch_description():
     ld.add_action(stdout_linebuf_envvar)
     ld.add_action(declare_use_sim_time_cmd)
     ld.add_action(declare_log_level_cmd)
+    ld.add_action(static_tf)            # ensure TF exists before Nav2
     ld.add_action(bringup_cmd_group)
-    ld.add_action(static_tf)
     ld.add_action(cmd_vel_converter)
     return ld

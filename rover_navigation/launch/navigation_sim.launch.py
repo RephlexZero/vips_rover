@@ -26,8 +26,7 @@ def generate_launch_description():
     # SLAM disabled for lidar-less setup
     
     # Remappings for ackermann drive
-    remappings = [
-        ('/cmd_vel', '/cmd_vel_nav'),
+    nav2_remappings = [
         ('/odom', '/ackermann_steering_controller/odometry')
     ]
 
@@ -49,6 +48,15 @@ def generate_launch_description():
         default_value='info',
         description='log level')
 
+    # Static map->odom identity TF (start BEFORE Nav2)
+    static_map_odom_tf = Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        name='map_odom_tf',
+        output='screen',
+        arguments=['0','0','0','0','0','0','map','odom']
+    )
+
     # Nav2 bringup group
     bringup_cmd_group = GroupAction([
         Node(
@@ -59,7 +67,7 @@ def generate_launch_description():
             respawn_delay=2.0,
             parameters=[nav2_params_file, {'use_sim_time': use_sim_time}],
             arguments=['--ros-args', '--log-level', log_level],
-            remappings=remappings),
+            remappings=nav2_remappings),
 
         Node(
             package='nav2_smoother',
@@ -120,8 +128,7 @@ def generate_launch_description():
             respawn_delay=2.0,
             parameters=[nav2_params_file, {'use_sim_time': use_sim_time}],
             arguments=['--ros-args', '--log-level', log_level],
-            remappings=remappings +
-                        [('/cmd_vel', '/cmd_vel_smoothed')]),
+            remappings=[('/cmd_vel', '/cmd_vel'), ('/cmd_vel_smoothed', '/cmd_vel_smoothed')] + nav2_remappings),
 
         # Collision monitor disabled for simulation (no sensors)
         # Node(
@@ -154,20 +161,6 @@ def generate_launch_description():
     # SLAM Toolbox
     # SLAM removed (no lidar) – map frame is maintained by a static TF
 
-    # Temporary map->odom identity TF to avoid early TF timeouts before SLAM publishes
-    bootstrap_map_odom_tf = TimerAction(
-        period=2.0,
-        actions=[
-            Node(
-                package='tf2_ros',
-                executable='static_transform_publisher',
-                name='bootstrap_map_odom_tf',
-                output='screen',
-                arguments=['0','0','0','0','0','0','map','odom']
-            )
-        ]
-    )
-
     # Cmd_vel to Ackermann converter
     cmd_vel_converter = Node(
         package='rover_navigation',
@@ -192,8 +185,8 @@ def generate_launch_description():
     ld.add_action(declare_log_level_cmd)
 
     # Add the actions to launch all of the navigation nodes
+    ld.add_action(static_map_odom_tf)      # ensure TF exists before Nav2
     ld.add_action(bringup_cmd_group)
-    ld.add_action(bootstrap_map_odom_tf)
     # no slam_toolbox_node
     ld.add_action(cmd_vel_converter)
 
