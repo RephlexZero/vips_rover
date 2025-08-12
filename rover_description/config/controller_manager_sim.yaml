@@ -1,0 +1,6 @@
+# Minimal controller manager configuration for gz_ros2_control
+# Controllers are loaded manually by spawners, not auto-loaded
+controller_manager:
+  ros__parameters:
+    use_sim_time: true
+    update_rate: 100

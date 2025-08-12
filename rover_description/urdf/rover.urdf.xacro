@@ -189,13 +189,11 @@
     <!-- Gazebo ROS2 Control Plugin - Only loaded when using Gazebo plugin -->
     <gazebo>
         <plugin filename="gz_ros2_control-system" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
-            <parameters>$(find rover_description)/config/$(arg controllers_file)</parameters>
+            <parameters>$(find rover_description)/config/controller_manager_sim.yaml</parameters>
             <controller_manager_node_name>controller_manager</controller_manager_node_name>
             <ros>
                 <namespace>/</namespace>
                 <remapping>/clock:=/clock</remapping>
-                <!-- Remap controller TF to standard /tf topic -->
-                <remapping>/ackermann_steering_controller/tf_odometry:=/tf</remapping>
                 <parameter name="use_sim_time" type="bool">$(arg use_sim_time)</parameter>
             </ros>
         </plugin>

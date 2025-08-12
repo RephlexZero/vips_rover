@@ -93,7 +93,7 @@ def generate_launch_description():
         executable='parameter_bridge',
         name='clock_bridge',
         output='screen',
-        arguments=['/clock@rosgraph_msgs/Clock[gz.msgs.Clock'],
+        arguments=['/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock'],
     )
 
     # Optional RViz (off by default; Nav2 launch typically starts RViz)
@@ -120,6 +120,9 @@ def generate_launch_description():
         ],
     )
 
+    # Controller Manager with explicit parameters from config file
+    controller_spawner_params = os.path.join(pkg_rover_description, 'config', 'controllers_spawn.yaml')
+
     # Spawners: configure and activate in order
     jsb_spawner = Node(
         package='controller_manager',
@@ -132,7 +135,7 @@ def generate_launch_description():
             '--controller-manager-timeout', '30',
             '--activate'
         ],
-        parameters=[{'use_sim_time': True}]
+        parameters=[controller_spawner_params, {'use_sim_time': True}]
     )
     ackermann_spawner = Node(
         package='controller_manager',
@@ -145,7 +148,7 @@ def generate_launch_description():
             '--controller-manager-timeout', '30',
             '--activate'
         ],
-        parameters=[{'use_sim_time': True}]
+        parameters=[controller_spawner_params, {'use_sim_time': True}]
     )
 
     # Spawn controllers only after wait node exits cleanly
