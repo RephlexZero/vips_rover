@@ -14,7 +14,14 @@ install(
     urdf
     config  
     launch
+    scripts
   DESTINATION share/${PROJECT_NAME}/
+)
+
+# Install executable scripts
+install(PROGRAMS
+    scripts/wait_for_ros2_control.py
+  DESTINATION lib/${PROJECT_NAME}
 )
 
 # Install meshes directory only if it exists and is not empty
