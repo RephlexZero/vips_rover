@@ -200,7 +200,7 @@
 
     <!-- Gazebo ROS2 Control Plugin - With controller parameters -->
     <gazebo>
-        <plugin filename="gz_ros2_control-system" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
+        <plugin filename="libgz_ros2_control-system.so" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
             <parameters>$(find rover_description)/config/gazebo_controller_manager.yaml</parameters>
             <controller_manager_node_name>controller_manager</controller_manager_node_name>
             <ros>

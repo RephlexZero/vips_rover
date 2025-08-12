@@ -10,6 +10,8 @@ set +u
 if [ -f "/opt/ros/jazzy/setup.bash" ]; then
     source /opt/ros/jazzy/setup.bash
 fi
+# Set Gazebo plugin paths for gz_ros2_control
+export GZ_SIM_SYSTEM_PLUGIN_PATH=${GZ_SIM_SYSTEM_PLUGIN_PATH}:/opt/ros/jazzy/lib
 set -u
 
 # Build if missing install or when SIM_BUILD=1 is set

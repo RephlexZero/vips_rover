@@ -20,6 +20,7 @@ install(DIRECTORY
 # Install Python scripts
 install(PROGRAMS
   scripts/cmd_vel_to_ackermann.py
+  scripts/manual_odom_publisher.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

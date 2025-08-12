@@ -15,6 +15,7 @@ from launch.actions import (
     DeclareLaunchArgument,
     SetEnvironmentVariable,
     RegisterEventHandler,
+    ExecuteProcess,
 )
 from launch.conditions import IfCondition
 from launch.event_handlers import OnProcessExit
@@ -73,11 +74,9 @@ def generate_launch_description():
     )
 
     # Start Gazebo simulation (headless by default)
-    gz_sim = Node(
-        package="ros_gz_sim",
-        executable="gz_sim",
+    gz_sim = ExecuteProcess(
+        cmd=["gz", "sim", "-r", "empty.sdf"],
         output="screen",
-        arguments=["-r", "empty.sdf"],
     )
 
     # Spawn model into Gazebo
@@ -161,11 +160,20 @@ def generate_launch_description():
         parameters=[controller_spawner_params, {"use_sim_time": True}],
     )
 
+    # Manual odom publisher (temporary fix for missing odom->base_link transform)
+    manual_odom_publisher = Node(
+        package="rover_navigation",
+        executable="manual_odom_publisher.py",
+        name="manual_odom_publisher",
+        output="screen",
+        parameters=[{"use_sim_time": LaunchConfiguration("use_sim_time")}],
+    )
+
     # Spawn controllers only after wait node exits cleanly
     spawn_after_wait = RegisterEventHandler(
         OnProcessExit(
             target_action=wait_for_ros2_control,
-            on_exit=[jsb_spawner, ackermann_spawner],
+            on_exit=[jsb_spawner, ackermann_spawner, manual_odom_publisher],
         )
     )
 
