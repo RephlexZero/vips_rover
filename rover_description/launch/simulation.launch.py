@@ -1,25 +1,8 @@
 #!/usr/bin/env python3
 
 """
-Spawns the r    # B        # Build robot_description via xacro; force it to be a string so Jazzy doesn't parse as YAML
-    robot_description = ParameterValue(
-        Command([
-            'xacro ',
-            LaunchConfiguration('urdf_model'),
-            ' hardware_plugin:=gz_ros2_control/GazeboSimSystem',
-            ' controllers_file:=rover_controllers_sim.yaml',
-            ' use_sim_time:=true'
-        ]),
-        value_type=str
-    )ot_description via xacro; force it to be a string so Jazzy doesn't parse as YAML
-    xacro_cmd = Command([
-        'xacro ',
-        LaunchConfiguration('urdf_model'),
-        ' hardware_plugin:=gz_ros2_control/GazeboSimSystem',
-        ' controllers_file:=rover_controllers_sim.yaml',
-        ' use_sim_time:=true'
-    ])Gazebo (gz-sim) with ros2_control.
-- One-way /clock bridge to avoid timejump loops
+Spawns the rover in Gazebo (gz-sim) with ros2_control.
+- One-way /clock bridge to avoid time jump loops
 - robot_description passed as a string (Jazzy-safe)
 - Wait for ros2_control hardware interfaces before spawning controllers
 - Spawns controllers in order and activates them
@@ -87,6 +70,14 @@ def generate_launch_description():
                 "use_sim_time": LaunchConfiguration("use_sim_time"),
             },
         ],
+    )
+
+    # Start Gazebo simulation (headless by default)
+    gz_sim = Node(
+        package="ros_gz_sim",
+        executable="gz_sim",
+        output="screen",
+        arguments=["-r", "empty.sdf"],
     )
 
     # Spawn model into Gazebo
@@ -185,6 +176,7 @@ def generate_launch_description():
             declare_urdf_model,
             declare_start_rviz,
             clock_bridge,
+            gz_sim,
             robot_state_publisher_node,
             create_entity,
             wait_for_ros2_control,
