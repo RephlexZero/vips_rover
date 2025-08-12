@@ -1,22 +1,16 @@
 #!/usr/bin/env python3
-
-"""
-Pure simulation: spawns the robot in Gazebo (gz-sim) with ros2_control and
-delays controller configuration to avoid races with gz_ros2_control.
-"""
-
 import os
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, TimerAction, SetEnvironmentVariable
 from launch.substitutions import LaunchConfiguration, Command
 from launch_ros.actions import Node
+from launch_ros.parameter_descriptions import ParameterValue
 from ament_index_python.packages import get_package_share_directory
 
 
 def generate_launch_description():
     pkg_rover_description = get_package_share_directory("rover_description")
 
-    # Launch args
     declare_use_sim_time = DeclareLaunchArgument(
         "use_sim_time", default_value="true", description="Use Gazebo sim time"
     )
@@ -26,26 +20,29 @@ def generate_launch_description():
         description="URDF xacro",
     )
 
-    # Build robot_description (SIM parameters)
-    robot_description = Command(
-        [
-            "xacro ",
-            LaunchConfiguration("urdf_model"),
-            " hardware_plugin:=gz_ros2_control/GazeboSimSystem",
-            " controllers_file:=rover_controllers_sim.yaml",
-            " use_sim_time:=true",
-        ]
-    )
+    # Build robot_description using xacro. Use a list of tokens (no trailing spaces)
+    xacro_cmd = Command([
+        'xacro ',
+        LaunchConfiguration('urdf_model'),
+        ' hardware_plugin:=gz_ros2_control/GazeboSimSystem',
+        ' controllers_file:=rover_controllers_sim.yaml',
+        ' use_sim_time:=true'
+    ])
+    # Force the parameter type to string so launch doesn't try to parse as YAML
+    robot_description_param = ParameterValue(xacro_cmd, value_type=str)
 
-    # Robot State Publisher (sim time)
     robot_state_publisher_node = Node(
         package="robot_state_publisher",
         executable="robot_state_publisher",
         output="screen",
-        parameters=[{"robot_description": robot_description, "use_sim_time": True}],
+        parameters=[
+            {
+                "robot_description": robot_description_param,
+                "use_sim_time": LaunchConfiguration("use_sim_time"),
+            }
+        ],
     )
 
-    # Spawn the model into Gazebo
     create_entity = Node(
         package="ros_gz_sim",
         executable="create",
@@ -53,7 +50,6 @@ def generate_launch_description():
         arguments=["-name", "rover", "-topic", "robot_description"],
     )
 
-    # Bridge clock
     parameter_bridge = Node(
         package="ros_gz_bridge",
         executable="parameter_bridge",
@@ -62,9 +58,8 @@ def generate_launch_description():
         arguments=["/clock@rosgraph_msgs/msg/Clock@gz.msgs.Clock"],
     )
 
-    # Controller spawners with delays and extended timeouts
     jsb_spawner = TimerAction(
-        period=3.0,  # wait for controller_manager + interfaces
+        period=3.0,
         actions=[
             Node(
                 package="controller_manager",
@@ -84,7 +79,7 @@ def generate_launch_description():
     )
 
     ackermann_spawner = TimerAction(
-        period=4.0,  # after JSB
+        period=4.0,
         actions=[
             Node(
                 package="controller_manager",
