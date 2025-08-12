@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>rover_hardware_interface</name>
+  <version>0.1.0</version>
+  <description>ros2_control hardware interface for the Ackermann rover with CAN bus.</description>
+  <maintainer email="jake.stewart@racelogic.co.uk">Jake Stewart</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <!-- Core ROS2 Control Dependencies -->
+  <depend>rclcpp</depend>
+  <depend>rclcpp_lifecycle</depend>
+  <depend>hardware_interface</depend>
+  <depend>pluginlib</depend>
+  
+  <!-- Hardware-specific dependencies -->
+  <depend>vips_driver</depend>
+  <depend>rover_description</depend>
+  
+  <!-- Removed simulation dependencies - these are now in rover_description -->
+  <!-- <depend>gz_ros2_control</depend> -->
+  <!-- <depend>ros_gz_bridge</depend> -->
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

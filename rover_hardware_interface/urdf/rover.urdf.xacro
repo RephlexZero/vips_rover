@@ -1,0 +1,196 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="ackermann_rover">
+
+    <!-- 
+    RC Racing Rover Specifications:
+    - Wheelbase: 567mm
+    - Track width: 435mm  
+    - Wheel diameter: 160mm (80mm radius)
+    - Camber: 5°
+    - Motor: D43L86-400 (400KV, 6-pole, 3000W max)
+    - Gearing: Intermediate 48/12=4, Final 44/16=2.75, Total=11:1
+    - ESC: Performa Racing PA9346 (120A continuous, 650A peak)
+    -->
+
+    <!-- Properties - Updated to match actual rover specifications -->
+    <xacro:property name="wheelbase" value="0.567" />         <!-- 567mm -->
+    <xacro:property name="track_width" value="0.435" />       <!-- 435mm -->
+    <xacro:property name="wheel_radius" value="0.08" />       <!-- 160mm diameter = 80mm radius -->
+    <xacro:property name="wheel_width" value="0.05" />        <!-- Estimated tire width -->
+    <xacro:property name="camber_angle" value="0.0873" />     <!-- 5° in radians -->
+    <xacro:property name="base_mass" value="8.0" />           <!-- kg - Estimated for RC rover -->
+    <xacro:property name="wheel_mass" value="0.5" />          <!-- kg - Lighter for RC wheels -->
+    
+    <!-- Motor and drivetrain specifications -->
+    <xacro:property name="intermediate_gear_ratio" value="4.0" />  <!-- 48/12 = 4 -->
+    <xacro:property name="final_gear_ratio" value="2.75" />        <!-- 44/16 = 2.75 -->
+    <xacro:property name="total_gear_ratio" value="11.0" />        <!-- 4 * 2.75 = 11 -->
+    <xacro:property name="motor_kv" value="400" />                 <!-- RPM/V -->
+
+    <!-- Base Link -->
+    <link name="base_link">
+        <visual>
+            <geometry>
+                <!-- Smaller chassis appropriate for RC rover scale -->
+                <box size="${wheelbase * 0.7} ${track_width * 0.8} 0.06"/>
+            </geometry>
+            <material name="grey">
+                <color rgba="0.5 0.5 0.5 1.0"/>
+            </material>
+            <!-- Raise the visual chassis to wheel level -->
+            <origin xyz="0 0 ${wheel_radius}" rpy="0 0 0"/>
+        </visual>
+        <collision>
+            <geometry>
+                <box size="${wheelbase * 0.7} ${track_width * 0.8} 0.06"/>
+            </geometry>
+            <!-- Raise the collision chassis to wheel level -->
+            <origin xyz="0 0 ${wheel_radius}" rpy="0 0 0"/>
+        </collision>
+        <inertial>
+            <mass value="${base_mass}"/>
+            <!-- Updated inertia for smaller, lighter rover -->
+            <inertia ixx="0.2" ixy="0.0" ixz="0.0" iyy="0.3" iyz="0.0" izz="0.4"/>
+            <!-- Raise the center of mass to wheel level -->
+            <origin xyz="0 0 ${wheel_radius}" rpy="0 0 0"/>
+        </inertial>
+    </link>
+
+    <!-- Wheel Macro -->
+    <xacro:macro name="wheel" params="prefix parent reflect_y">
+        <link name="${prefix}_wheel_link">
+            <visual>
+                <origin rpy="${pi/2} 0 0" xyz="0 0 0"/>
+                <geometry>
+                    <cylinder length="${wheel_width}" radius="${wheel_radius}"/>
+                </geometry>
+                <material name="black">
+                    <color rgba="0.1 0.1 0.1 1.0"/>
+                </material>
+            </visual>
+            <collision>
+                <origin rpy="${pi/2} 0 0" xyz="0 0 0"/>
+                <geometry>
+                    <cylinder length="${wheel_width}" radius="${wheel_radius}"/>
+                </geometry>
+            </collision>
+            <inertial>
+                <mass value="${wheel_mass}"/>
+                <!-- Proper inertia for a cylinder (wheel) -->
+                <inertia ixx="${wheel_mass * (3 * wheel_radius * wheel_radius + wheel_width * wheel_width) / 12}" 
+                         ixy="0.0" 
+                         ixz="0.0" 
+                         iyy="${wheel_mass * wheel_radius * wheel_radius / 2}" 
+                         iyz="0.0" 
+                         izz="${wheel_mass * (3 * wheel_radius * wheel_radius + wheel_width * wheel_width) / 12}"/>
+            </inertial>
+        </link>
+
+        <joint name="${prefix}_wheel_joint" type="continuous">
+            <parent link="${parent}"/>
+            <child link="${prefix}_wheel_link"/>
+            <!-- For front wheels, position at steering knuckle with camber. For rear wheels, position at rear axle with correct track width -->
+            <!-- Position wheels so their bottom edge touches ground -->
+            <xacro:if value="${prefix.startswith('front')}">
+                <origin xyz="0 0 0" 
+                        rpy="0 ${reflect_y * camber_angle} 0"/>
+            </xacro:if>
+            <xacro:unless value="${prefix.startswith('front')}">
+                <origin xyz="${-wheelbase/2} ${reflect_y * (track_width/2)} ${wheel_radius}" 
+                        rpy="0 0 0"/>
+            </xacro:unless>
+            <axis xyz="0 1 0"/>
+        </joint>
+
+        <!-- Gazebo specific friction properties - Higher friction for racing -->
+        <gazebo reference="${prefix}_wheel_link">
+            <mu1>1.2</mu1>
+            <mu2>1.0</mu2>
+            <material>Gazebo/Black</material>
+            <!-- Add rolling resistance for more realistic physics -->
+            <fdir1>1 0 0</fdir1>
+        </gazebo>
+    </xacro:macro>
+
+    <!-- Steering Knuckle Macro -->
+    <xacro:macro name="steering_knuckle" params="prefix reflect_x reflect_y">
+        <link name="${prefix}_steer_link">
+            <inertial>
+                <mass value="0.1"/>
+                <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
+            </inertial>
+        </link>
+        <joint name="${prefix}_steer_joint" type="revolute">
+            <parent link="base_link"/>
+            <child link="${prefix}_steer_link"/>
+            <!-- Position steering knuckles at front corners, raised so wheels touch ground -->
+            <origin xyz="${reflect_x * (wheelbase/2)} ${reflect_y * (track_width/2)} ${wheel_radius}"/>
+            <axis xyz="0 0 1"/>
+            <limit lower="-0.7" upper="0.7" effort="10" velocity="5"/>
+        </joint>
+        <xacro:wheel prefix="${prefix}" parent="${prefix}_steer_link" reflect_y="${reflect_y}"/>
+    </xacro:macro>
+
+    <!-- Create Wheels -->
+    <xacro:steering_knuckle prefix="front_left" reflect_x="1" reflect_y="1"/>
+    <xacro:steering_knuckle prefix="front_right" reflect_x="1" reflect_y="-1"/>
+    
+    <!-- Rear wheels need proper axle positioning -->
+    <xacro:wheel prefix="rear_left" parent="base_link" reflect_y="1"/>
+    <xacro:wheel prefix="rear_right" parent="base_link" reflect_y="-1"/>
+    
+    <!-- ros2_control integration -->
+    <ros2_control name="GazeboSystem" type="system">
+        <hardware>
+            <!-- This is the modern Gazebo (Ignition) plugin that simulates your hardware interface -->
+            <plugin>gz_ros2_control/GazeboSimSystem</plugin>
+        </hardware>
+
+        <!-- The rest of the joint definitions are the same as before -->
+        <joint name="rear_left_wheel_joint">
+            <command_interface name="velocity"/>
+            <state_interface name="position"/>
+            <state_interface name="velocity"/>
+        </joint>
+        <joint name="rear_right_wheel_joint">
+            <command_interface name="velocity"/>
+            <state_interface name="position"/>
+            <state_interface name="velocity"/>
+        </joint>
+                <joint name="front_left_steer_joint">
+            <command_interface name="position"/>
+            <state_interface name="position"/>
+        </joint>
+        <joint name="front_right_steer_joint">
+            <command_interface name="position"/>
+            <state_interface name="position"/>
+        </joint>
+        <joint name="front_left_wheel_joint">
+            <state_interface name="position"/>
+            <state_interface name="velocity"/>
+        </joint>
+        <joint name="front_right_wheel_joint">
+            <state_interface name="position"/>
+            <state_interface name="velocity"/>
+        </joint>
+    </ros2_control>
+
+    <!-- Gazebo ROS2 Control Plugin -->
+    <gazebo>
+        <plugin filename="gz_ros2_control-system" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
+            <parameters>$(find rover_hardware_interface)/config/rover_controllers.yaml</parameters>
+            <controller_manager_node_name>controller_manager</controller_manager_node_name>
+            <ros>
+                <namespace>/</namespace>
+                <remapping>/clock:=/clock</remapping>
+                <parameter name="use_sim_time" type="bool">true</parameter>
+            </ros>
+        </plugin>
+    </gazebo>
+
+    <!-- Add a Gazebo reference for the base_link to set its color -->
+    <gazebo reference="base_link">
+        <material>Gazebo/Grey</material>
+    </gazebo>
+
+</robot>
