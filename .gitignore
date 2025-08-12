@@ -3,3 +3,4 @@ install/
 __pycache__/
 log/
 .vscode/
+.ruff_cache/

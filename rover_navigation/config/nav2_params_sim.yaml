@@ -1,49 +1,27 @@
-# Nav2 parameters for rover simulation
-# Optimized for ackermann steering rover with differential drive
-
+# Nav2 parameters for simulation (no lidar)
 bt_navigator:
   ros__parameters:
     use_sim_time: true
     global_frame: map
     robot_base_frame: base_link
     odom_topic: /ackermann_steering_controller/odometry
-    bt_loop_duration: 10
-    default_server_timeout: 20
-    navigators: ['navigate_to_pose', 'navigate_through_poses']
-    navigate_to_pose:
-      plugin: "nav2_bt_navigator::NavigateToPoseNavigator"
-    navigate_through_poses:
-      plugin: "nav2_bt_navigator::NavigateThroughPosesNavigator"
-    # Use default behavior trees to avoid plugin conflicts
-    # default_nav_to_pose_bt_xml: $(find-pkg-share nav2_bt_navigator)/behavior_trees/navigate_to_pose_w_replanning_and_recovery.xml
-    # default_nav_through_poses_bt_xml: $(find-pkg-share nav2_bt_navigator)/behavior_trees/navigate_through_poses_w_replanning_and_recovery.xml
 
 controller_server:
   ros__parameters:
     use_sim_time: true
     controller_frequency: 20.0
-    min_x_velocity_threshold: 0.001
-    min_y_velocity_threshold: 0.5
-    min_theta_velocity_threshold: 0.001
-    failure_tolerance: 0.3
     progress_checker_plugins: ["progress_checker"]
     goal_checker_plugins: ["general_goal_checker"]
     controller_plugins: ["FollowPath"]
-
-    # Progress checker parameters
     progress_checker:
       plugin: "nav2_controller::SimpleProgressChecker"
       required_movement_radius: 0.5
       movement_time_allowance: 10.0
-      
-    # Goal checker parameters
     general_goal_checker:
       plugin: "nav2_controller::SimpleGoalChecker"
       xy_goal_tolerance: 0.25
       yaw_goal_tolerance: 0.25
       stateful: true
-
-    # Ackermann controller
     FollowPath:
       plugin: "nav2_regulated_pure_pursuit_controller::RegulatedPurePursuitController"
       desired_linear_vel: 2.0
@@ -85,7 +63,7 @@ local_costmap:
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         cost_scaling_factor: 3.0
-        inflation_radius: 0.0
+        inflation_radius: 0.35    # increased from 0.0 to >= inscribed radius
       always_send_full_costmap: true
 
 global_costmap:
@@ -98,12 +76,18 @@ global_costmap:
       use_sim_time: true
       robot_radius: 0.3
       resolution: 0.05
+      # Enable rolling window for no-map simulation so planning works on empty grid
+      rolling_window: true
+      width: 50.0
+      height: 50.0
+      origin_x: -25.0
+      origin_y: -25.0
       track_unknown_space: false
       plugins: ["inflation_layer"]
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         cost_scaling_factor: 3.0
-        inflation_radius: 0.0
+        inflation_radius: 0.35    # increased from 0.0
       always_send_full_costmap: true
 
 map_server:
@@ -166,63 +150,4 @@ behavior_server:
     rotational_acc_lim: 3.2
 
 robot_state_publisher:
-  ros__parameters:
-    use_sim_time: true
-
-waypoint_follower:
-  ros__parameters:
-    use_sim_time: true
-    loop_rate: 20
-    stop_on_failure: false
-    waypoint_task_executor_plugin: "wait_at_waypoint"
-    wait_at_waypoint:
-      plugin: "nav2_waypoint_follower::WaitAtWaypoint"
-      enabled: true
-      waypoint_pause_duration: 200
-
-velocity_smoother:
-  ros__parameters:
-    use_sim_time: true
-    smoothing_frequency: 20.0
-    scale_velocities: false
-    feedback: "OPEN_LOOP"
-    max_velocity: [2.0, 0.0, 2.0]
-    min_velocity: [-2.0, 0.0, -2.0]
-    max_accel: [2.5, 0.0, 3.2]
-    max_decel: [-2.5, 0.0, -3.2]
-    odom_topic: "/ackermann_steering_controller/odometry"
-    odom_duration: 0.1
-    deadband_velocity: [0.0, 0.0, 0.0]
-    velocity_timeout: 1.0
-
-# Disable collision monitor when no sensors are available
-collision_monitor:
-  ros__parameters:
-    use_sim_time: true
-    enabled: false
-    base_frame: "base_link"
-    odom_frame: "odom"
-    cmd_vel_in_topic: "cmd_vel_nav"
-    cmd_vel_out_topic: "cmd_vel"
-    state_topic: "collision_monitor_state"
-    transform_tolerance: 0.5
-    source_timeout: 5.0
-    stop_pub_timeout: 2.0
-    polygons: []
-    observation_sources: []
-
-docking_server:
-  ros__parameters:
-    use_sim_time: true
-    controller_frequency: 50.0
-    initial_perception_timeout: 5.0
-    wait_charge_timeout: 5.0
-    dock_approach_timeout: 30.0
-    undock_timeout: 30.0
-    max_retries: 3
-    base_frame: "base_link"
-    fixed_frame: "odom"
-    dock_backwards: false
-    dock_prestaging_tolerance: 0.5
-    # Disable dock plugins since we don't have dock hardware
-    dock_plugins: []
+  ros__parameters: {}

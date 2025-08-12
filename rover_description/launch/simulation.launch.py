@@ -1,181 +1,117 @@
-"""
-Pure simulation launch file - NO HARDWARE COMPONENTS
+#!/usr/bin/env python3
 
-This launch file is specifically designed for simulation testing and excludes:
-- VIPS driver
-- Hardware CAN interfaces
-- Hardware-specific configurations
-
-Use this for:
-- Algorithm development
-- Controller tuning
-- Path planning testing
-- General rover simulation
 """
+Pure simulation: spawns the robot in Gazebo (gz-sim) with ros2_control and
+delays controller configuration to avoid races with gz_ros2_control.
+"""
+
 import os
-from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, TimerAction
-from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.actions import DeclareLaunchArgument, TimerAction, SetEnvironmentVariable
 from launch.substitutions import LaunchConfiguration, Command
 from launch_ros.actions import Node
-from launch_ros.parameter_descriptions import ParameterValue
+from ament_index_python.packages import get_package_share_directory
+
 
 def generate_launch_description():
-    pkg_share = get_package_share_directory('rover_description')
-    
-    # Try to find ros_gz_sim, fall back to gazebo_ros if using older distribution
-    try:
-        pkg_ros_gz_sim = get_package_share_directory('ros_gz_sim')
-        use_new_gazebo = True
-    except:
-        pkg_gazebo_ros = get_package_share_directory('gazebo_ros')
-        use_new_gazebo = False
+    pkg_rover_description = get_package_share_directory("rover_description")
 
-    # --- Launch Arguments ---
-    world_arg = DeclareLaunchArgument(
-        name='world',
-        default_value='empty.sdf',
-        description='Gazebo world file to load'
+    # Launch args
+    declare_use_sim_time = DeclareLaunchArgument(
+        "use_sim_time", default_value="true", description="Use Gazebo sim time"
     )
-    
-    urdf_model_arg = DeclareLaunchArgument(
-        name='urdf_model', 
-        default_value=os.path.join(pkg_share, 'urdf/rover.urdf.xacro'),
-        description='Absolute path to robot urdf file'
+    declare_urdf_model = DeclareLaunchArgument(
+        "urdf_model",
+        default_value=os.path.join(pkg_rover_description, "urdf", "rover.urdf.xacro"),
+        description="URDF xacro",
     )
 
-    use_sim_time_arg = DeclareLaunchArgument(
-        name='use_sim_time',
-        default_value='true',
-        description='Use simulation time if true'
+    # Build robot_description (SIM parameters)
+    robot_description = Command(
+        [
+            "xacro ",
+            LaunchConfiguration("urdf_model"),
+            " hardware_plugin:=gz_ros2_control/GazeboSimSystem",
+            " controllers_file:=rover_controllers_sim.yaml",
+            " use_sim_time:=true",
+        ]
     )
 
-    # --- Robot Description with SIMULATION parameters ---
-    robot_description = ParameterValue(
-        Command([
-            'xacro ', LaunchConfiguration('urdf_model'),
-            ' hardware_plugin:=gz_ros2_control/GazeboSimSystem',
-            ' controllers_file:=rover_controllers_sim.yaml',
-            ' use_sim_time:=true'
-        ]), 
-        value_type=str
-    )
-
-    # --- Gazebo Simulation Launch ---
-    if use_new_gazebo:
-        # Modern Gazebo (Ignition/Garden)
-        gz_sim_launch = IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(
-                os.path.join(pkg_ros_gz_sim, 'launch', 'gz_sim.launch.py')
-            ),
-            launch_arguments=[
-                ('gz_args', ['-r -v4 ', LaunchConfiguration('world')]),
-                ('use_sim_time', 'true')
-            ]
-        )
-        
-        # Clock bridge for new Gazebo
-        clock_bridge = Node(
-            package='ros_gz_bridge',
-            executable='parameter_bridge',
-            arguments=['/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock'],
-            output='screen',
-            parameters=[{'use_sim_time': True}]
-        )
-        
-        # Spawn robot in new Gazebo
-        spawn_entity_node = Node(
-            package='ros_gz_sim',
-            executable='create',
-            arguments=['-topic', 'robot_description', '-name', 'ackermann_rover'],
-            output='screen',
-            parameters=[{'use_sim_time': True}]
-        )
-        
-        extra_nodes = [clock_bridge, spawn_entity_node]
-        
-    else:
-        # Classic Gazebo
-        gz_sim_launch = IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(
-                os.path.join(pkg_gazebo_ros, 'launch', 'gazebo.launch.py')
-            ),
-            launch_arguments={
-                'world': LaunchConfiguration('world'),
-                'use_sim_time': 'true'
-            }.items()
-        )
-        
-        # Spawn robot in classic Gazebo
-        spawn_entity_node = Node(
-            package='gazebo_ros',
-            executable='spawn_entity.py',
-            arguments=['-topic', 'robot_description', '-entity', 'ackermann_rover'],
-            output='screen',
-            parameters=[{'use_sim_time': True}]
-        )
-        
-        extra_nodes = [spawn_entity_node]
-
-    # --- Core Nodes ---
-    # Robot State Publisher
+    # Robot State Publisher (sim time)
     robot_state_publisher_node = Node(
-        package='robot_state_publisher',
-        executable='robot_state_publisher',
-        output='screen',
-        parameters=[{
-            'use_sim_time': LaunchConfiguration('use_sim_time'),
-            'robot_description': robot_description
-        }]
+        package="robot_state_publisher",
+        executable="robot_state_publisher",
+        output="screen",
+        parameters=[{"robot_description": robot_description, "use_sim_time": True}],
     )
 
-    # --- Controller Spawners (Delayed) ---
-    # Even with ros_gz_sim, explicitly spawning ensures controllers are active
-    
-    joint_state_broadcaster_spawner = TimerAction(
-        period=3.0,  # Wait for Gazebo and controller manager
+    # Spawn the model into Gazebo
+    create_entity = Node(
+        package="ros_gz_sim",
+        executable="create",
+        output="screen",
+        arguments=["-name", "rover", "-topic", "robot_description"],
+    )
+
+    # Bridge clock
+    parameter_bridge = Node(
+        package="ros_gz_bridge",
+        executable="parameter_bridge",
+        name="parameter_bridge",
+        output="screen",
+        arguments=["/clock@rosgraph_msgs/msg/Clock@gz.msgs.Clock"],
+    )
+
+    # Controller spawners with delays and extended timeouts
+    jsb_spawner = TimerAction(
+        period=3.0,  # wait for controller_manager + interfaces
         actions=[
             Node(
-                package='controller_manager',
-                executable='spawner',
-                arguments=['joint_state_broadcaster', '--controller-manager', '/controller_manager'],
-                output='screen',
-                parameters=[{'use_sim_time': True}]
+                package="controller_manager",
+                executable="spawner",
+                name="spawner_joint_state_broadcaster",
+                output="screen",
+                arguments=[
+                    "joint_state_broadcaster",
+                    "--controller-manager",
+                    "/controller_manager",
+                    "--controller-manager-timeout",
+                    "30",
+                ],
+                parameters=[{"use_sim_time": True}],
             )
-        ]
+        ],
     )
 
-    ackermann_controller_spawner = TimerAction(
-        period=4.0,  # Wait for joint state broadcaster
+    ackermann_spawner = TimerAction(
+        period=4.0,  # after JSB
         actions=[
             Node(
-                package='controller_manager',
-                executable='spawner',
-                arguments=['ackermann_steering_controller', '--controller-manager', '/controller_manager'],
-                output='screen',
-                parameters=[{'use_sim_time': True}]
+                package="controller_manager",
+                executable="spawner",
+                name="spawner_ackermann_steering_controller",
+                output="screen",
+                arguments=[
+                    "ackermann_steering_controller",
+                    "--controller-manager",
+                    "/controller_manager",
+                    "--controller-manager-timeout",
+                    "30",
+                ],
+                parameters=[{"use_sim_time": True}],
             )
-        ]
+        ],
     )
 
-    # Build launch description
-    launch_nodes = [
-        # Arguments
-    world_arg,
-        urdf_model_arg,
-    use_sim_time_arg,
-        
-        # Core simulation
-        gz_sim_launch,
-        robot_state_publisher_node,
-        
-        # Ensure controllers are spawned and activated
-        joint_state_broadcaster_spawner,
-        ackermann_controller_spawner,
-    ]
-    
-    # Add extra nodes based on Gazebo version
-    launch_nodes.extend(extra_nodes)
-
-    return LaunchDescription(launch_nodes)
+    return LaunchDescription(
+        [
+            SetEnvironmentVariable("RCUTILS_LOGGING_BUFFERED_STREAM", "1"),
+            declare_use_sim_time,
+            declare_urdf_model,
+            parameter_bridge,
+            robot_state_publisher_node,
+            create_entity,
+            jsb_spawner,
+            ackermann_spawner,
+        ]
+    )
