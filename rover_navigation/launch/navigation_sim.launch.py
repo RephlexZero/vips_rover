@@ -8,14 +8,11 @@ import os
 from launch import LaunchDescription
 from launch.actions import (
     DeclareLaunchArgument,
-    IncludeLaunchDescription,
     GroupAction,
     SetEnvironmentVariable,
 )
-from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
-from launch_ros.substitutions import FindPackageShare
 from ament_index_python.packages import get_package_share_directory
 
 
@@ -32,23 +29,9 @@ def generate_launch_description():
         "use_sim_time", default_value="true", description="Use simulation clock if true"
     )
 
-    # Include rover simulation launch (robot + controllers)
-    rover_simulation_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            [
-                PathJoinSubstitution(
-                    [
-                        FindPackageShare("rover_description"),
-                        "launch",
-                        "simulation.launch.py",
-                    ]
-                )
-            ]
-        ),
-        launch_arguments=[
-            ("use_sim_time", use_sim_time),
-        ],
-    )
+    # NOTE: Do not include rover_description/simulation.launch.py here.
+    # The top-level rover_nav_sim.launch.py already includes it. Including it
+    # here caused duplicate spawners and controller conflicts.
 
     # Start a static map->odom TF BEFORE Nav2 to avoid early TF timeouts
     static_map_odom_tf = Node(
@@ -177,18 +160,8 @@ def generate_launch_description():
         ],
     )
 
-    # RViz2 with navigation config
-    rviz_config_file = PathJoinSubstitution(
-        [FindPackageShare("rover_navigation"), "config", "nav2_default_view.rviz"]
-    )
-    rviz_node = Node(
-        package="rviz2",
-        executable="rviz2",
-        name="rviz2",
-        output="screen",
-        arguments=["-d", rviz_config_file],
-        parameters=[{"use_sim_time": use_sim_time}],
-    )
+    # RViz2 with navigation config - REMOVED TO AVOID DUPLICATES
+    # RViz is now launched by rover_nav_sim.launch.py instead
 
     # Create the launch description and populate
     ld = LaunchDescription()
@@ -199,11 +172,10 @@ def generate_launch_description():
     # Declare the launch options
     ld.add_action(declare_use_sim_time_cmd)
 
-    # Ensure TF exists before Nav2
-    ld.add_action(rover_simulation_launch)
+    # Ensure TF exists before Nav2 (simulation is launched by rover_nav_sim.launch.py)
     ld.add_action(static_map_odom_tf)
     ld.add_action(nav2_launch)
     ld.add_action(cmd_vel_converter)
-    ld.add_action(rviz_node)
+    # Note: RViz removed to avoid duplicates - launched by rover_nav_sim.launch.py
 
     return ld

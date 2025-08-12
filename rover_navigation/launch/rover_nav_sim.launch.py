@@ -43,6 +43,7 @@ def generate_launch_description():
         ),
         launch_arguments=[
             ("use_sim_time", use_sim_time),
+            ("start_rviz", "false"),  # Disable RViz in simulation - we launch our own
         ],
     )
 
