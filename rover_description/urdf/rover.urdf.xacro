@@ -35,6 +35,9 @@
     <xacro:property name="total_gear_ratio" value="11.0" />        <!-- 4 * 2.75 = 11 -->
     <xacro:property name="motor_kv" value="400" />                 <!-- RPM/V -->
 
+    <!-- Base Footprint (root link with no inertia) -->
+    <link name="base_footprint"/>
+
     <!-- Base Link -->
     <link name="base_link">
         <visual>
@@ -63,6 +66,13 @@
             <origin xyz="0 0 ${wheel_radius}" rpy="0 0 0"/>
         </inertial>
     </link>
+
+    <!-- Joint connecting base_footprint to base_link -->
+    <joint name="base_footprint_to_base_link" type="fixed">
+        <parent link="base_footprint"/>
+        <child link="base_link"/>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+    </joint>
 
     <!-- Wheel Macro -->
     <xacro:macro name="wheel" params="prefix parent reflect_y">
@@ -171,10 +181,12 @@
         <joint name="front_left_steer_joint">
             <command_interface name="position"/>
             <state_interface name="position"/>
+            <state_interface name="velocity"/>
         </joint>
         <joint name="front_right_steer_joint">
             <command_interface name="position"/>
             <state_interface name="position"/>
+            <state_interface name="velocity"/>
         </joint>
         <joint name="front_left_wheel_joint">
             <state_interface name="position"/>
@@ -186,10 +198,10 @@
         </joint>
     </ros2_control>
 
-    <!-- Gazebo ROS2 Control Plugin - Only loaded when using Gazebo plugin -->
+    <!-- Gazebo ROS2 Control Plugin - With controller parameters -->
     <gazebo>
         <plugin filename="gz_ros2_control-system" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
-            <parameters>$(find rover_description)/config/gazebo_ros2_control.yaml</parameters>
+            <parameters>$(find rover_description)/config/gazebo_controller_manager.yaml</parameters>
             <controller_manager_node_name>controller_manager</controller_manager_node_name>
             <ros>
                 <namespace>/</namespace>

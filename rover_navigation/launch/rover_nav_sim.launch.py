@@ -60,18 +60,23 @@ def generate_launch_description():
         ],
     )
 
-    # RViz2 with navigation config
+    # RViz2 with navigation config - delayed to avoid time jump issues
     rviz_config_file = PathJoinSubstitution(
         [FindPackageShare("rover_navigation"), "config", "nav2_default_view.rviz"]
     )
 
-    rviz_node = Node(
-        package="rviz2",
-        executable="rviz2",
-        name="rviz2",
-        output="screen",
-        arguments=["-d", rviz_config_file],
-        parameters=[{"use_sim_time": use_sim_time}],
+    rviz_node = TimerAction(
+        period=8.0,  # Start RViz after Nav2 and controllers are stable
+        actions=[
+            Node(
+                package="rviz2",
+                executable="rviz2",
+                name="rviz2",
+                output="screen",
+                arguments=["-d", rviz_config_file],
+                parameters=[{"use_sim_time": use_sim_time}],
+            )
+        ],
     )
 
     # Create the launch description and populate

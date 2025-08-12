@@ -1,21 +1,13 @@
-## gz_ros2_control plugin configuration with controller definitions
-## These parameters are loaded by the controller_manager node created by the
-## gz_ros2_control plugin inside Gazebo. Declaring the controllers and their
-## parameters here ensures they're properly configured before the spawners try
-## to configure/activate them.
+## gz_ros2_control plugin configuration - Provide parameters for spawners
+## Controller manager settings only, no controller type declarations
 
 controller_manager:
   ros__parameters:
     use_sim_time: true
     update_rate: 100
+    # No controller type declarations here to avoid auto-loading
 
-    # Declare controllers (types only)
-    joint_state_broadcaster:
-      type: joint_state_broadcaster/JointStateBroadcaster
-    ackermann_steering_controller:
-      type: ackermann_steering_controller/AckermannSteeringController
-
-# Controller-specific parameters
+# Controller parameter blocks (used by spawners)
 joint_state_broadcaster:
   ros__parameters:
     use_sim_time: true
@@ -29,7 +21,7 @@ ackermann_steering_controller:
 
     # Geometry
     wheelbase: 0.567            # meters
-    front_wheel_track: 0.35     # meters
+    front_wheel_track: 0.35     # meters  
     rear_wheel_track: 0.35      # meters
     steering_limit: 0.785398163 # 45 degrees in rad
     speed_limit: 2.0            # m/s

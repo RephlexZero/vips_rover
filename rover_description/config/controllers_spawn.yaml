@@ -36,5 +36,5 @@ ackermann_steering_controller:
     # Odometry
     enable_odom_tf: true
     odom_frame_id: odom
-    base_frame_id: base_link
+    base_frame_id: base_footprint
     publish_rate: 50.0

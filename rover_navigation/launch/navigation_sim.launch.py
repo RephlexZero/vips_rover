@@ -39,7 +39,13 @@ def generate_launch_description():
         executable="static_transform_publisher",
         name="map_to_odom_static_tf",
         output="screen",
-        arguments=["0", "0", "0", "0", "0", "0", "map", "odom"],
+        arguments=[
+            "--frame-id", "map",
+            "--child-frame-id", "odom",
+            "--x", "0.0", "--y", "0.0", "--z", "0.0",
+            "--qx", "0.0", "--qy", "0.0", "--qz", "0.0", "--qw", "1.0",
+        ],
+        parameters=[{"use_sim_time": use_sim_time}],
     )
 
     # Include Nav2 bringup with localization disabled (no lidar) and our tuned params

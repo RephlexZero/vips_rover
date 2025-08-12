@@ -71,6 +71,11 @@ def generate_launch_description():
         value_type=str,
     )
 
+    # Controller Manager configuration file with parameters
+    controller_spawner_params = os.path.join(
+        pkg_rover_description, "config", "controllers_spawn.yaml"
+    )
+
     # Robot State Publisher
     robot_state_publisher_node = Node(
         package="robot_state_publisher",
@@ -80,7 +85,7 @@ def generate_launch_description():
             {
                 "robot_description": robot_description,
                 "use_sim_time": LaunchConfiguration("use_sim_time"),
-            }
+            },
         ],
     )
 
